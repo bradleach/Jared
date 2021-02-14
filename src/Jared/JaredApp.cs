@@ -1,5 +1,7 @@
 ﻿using Autofac;
 using Jared.Autofac;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
 using Serilog;
 using System;
 using System.Threading.Tasks;
@@ -9,6 +11,7 @@ namespace Jared
     public class JaredApp
     {
         protected IContainer container;
+        protected IConfiguration Configuration;
 
         /// <summary>
         /// 
@@ -18,6 +21,8 @@ namespace Jared
         public async Task<int> Execute(string[] args)
         {
             Log.Logger = ConfigureFallbackLogger();
+
+            InitializeConfiguration();
 
             Initialize();
 
@@ -62,6 +67,15 @@ namespace Jared
                        .CreateLogger();
         }
 
+        protected virtual void InitializeConfiguration()
+        {
+            Configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .AddCommandLine(Environment.GetCommandLineArgs())
+                .Build();
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -72,6 +86,8 @@ namespace Jared
             try
             {
                 var builder = new ContainerBuilder();
+
+                builder.RegisterInstance(Configuration);
 
                 // Register all the jobs (anything that implements IJob)
                 builder.RegisterJobs();
